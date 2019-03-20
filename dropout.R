@@ -15,8 +15,16 @@ clean_data <- clean_data %>% mutate(TOTD912 = ifelse(TOTD912 == -3,3,TOTD912))
 
 clean_data <- clean_data %>% mutate(TOTD912 = ifelse(TOTD912 == -4,max(0,EBS912-3),TOTD912))
 
+clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -9,NA,SECGUI09))
 
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -1 | SECGUI09 == -2 |
+clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(STUSUP09 == -9,NA,STUSUP09))
+
+clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -1 | STUSUP09 == -1 |
                                                            SECGUI09 == -9,NA,SECGUI09))
+
+clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(STUSUP09 == -1 | SECGUI09 == -2 |
+                                                            SECGUI09 == -9,NA,SECGUI09))
+
+clean_data <- clean_data %>% mutate(TOTSS = SECGUI09 + STUSUP09)
 
 clean_data <- na.omit(clean_data)

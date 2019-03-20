@@ -1,5 +1,7 @@
 library(dplyr)
 library(ggplot2)
+library(readxl)
+
 directory <- as.data.frame(read_excel("data/Data.xlsx", sheet = "Directory"))
 dropout <- as.data.frame(read_excel("data/Data.xlsx", sheet = "Dropout"))
 
@@ -19,33 +21,63 @@ clean_data <- clean_data %>% mutate(TOTD912 = ifelse(TOTD912 == -3,3,TOTD912))
 
 clean_data <- clean_data %>% mutate(TOTD912 = ifelse(TOTD912 == -4,ifelse(EBS912 < 3,0,EBS912-3),TOTD912))
 
+# Convert Type09 to Factor
+clean_data <- clean_data %>% mutate(TYPE09 = as.factor(TYPE09))
+clean_data <- clean_data %>% mutate(FIPST = as.factor(FIPST))
+
+# Assigning NA to values less than 0
+
+clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 < 0,NA,SECGUI09))
+
+clean_data <- clean_data %>% mutate(STUSUP09 = ifelse(STUSUP09 < 0,NA,STUSUP09))
+
+clean_data <- clean_data %>% mutate(SPECED09 = ifelse(SPECED09 < 0,NA,SPECED09))
+
+clean_data <- clean_data %>% mutate(SECTCH09 = ifelse(SECTCH09 < 0,NA,SECTCH09))
+
+clean_data <- clean_data %>% mutate(SCHADM09 = ifelse(SCHADM09 < 0,NA,SCHADM09))
+
 clean_data <- na.omit(clean_data)
 
-# Looking at counselors and student support staff
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -9,NA,SECGUI09))
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(STUSUP09 == -9,NA,STUSUP09))
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -1,NA,SECGUI09))
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(SECGUI09 == -2,NA,SECGUI09))
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(STUSUP09 == -1,NA,SECGUI09))
-
-clean_data <- clean_data %>% mutate(SECGUI09 = ifelse(STUSUP09 == -2,NA,SECGUI09))
-
-clean_data <- na.omit(clean_data)
+# New variables
 
 clean_data <- clean_data %>% mutate(TOTSS = SECGUI09 + STUSUP09)
 
-clean_data <- clean_data %>% mutate(GCLOAD = ifelse(TOTSS == 0,0,EBS912/TOTSS))
+clean_data <- clean_data %>% mutate(SSLOAD = ifelse(TOTSS == 0,0,EBS912/TOTSS))
+
+clean_data <- clean_data %>% mutate(ADMLOAD = ifelse(SCHADM09 == 0,0,EBS912/SCHADM09))
+
+clean_data <- clean_data %>% mutate(SPECEDRATE = SPECED09 / EBS912)
+
+clean_data <- clean_data %>% mutate(SECTCHLOAD = ifelse(SECTCH09 == 0,0,EBS912/SECTCH09))
 
 clean_data <- clean_data %>% mutate(DRP912 = TOTD912 / EBS912)
 
-summary(clean_data)
+#----------- National Models -----------#
 
-plot(clean_data$GCLOAD, clean_data$DRP912EX)
+nat_model <- glm(clean_data$TOTD912 ~ clean_data$SPECED09 + clean_data$SECGUI09 + 
+                   clean_data$STUSUP09 + clean_data$SSLOAD  +
+                   clean_data$SCHADM09 + clean_data$SECTCH09, 
+             family = quasipoisson, data = clean_data)
+
+#----------- Thurmont Data ------------# 
+
+thurmIdx <- grep('Thurmont',directory$NAME09,ignore.case = T)
+thurmLEAID <- directory[thurmIdx,'LEAID']
+thurm <- clean_data %>% filter(LEAID == thurmLEAID)
+
+
+# NJ DATA #
+
+nj <- clean_data %>% filter(FIPST == thurm$FIPST)
+
+# NJ model #
+
+nj_model <- glm(nj$TOTD912 ~ nj$SPECED09 + nj$STUSUP09 +
+                      nj$SECGUI09 + nj$SECTCH09 +
+                      nj$SCHADM09 + nj$TYPE09, family = quasipoisson, data = nj)
+
+
 
 
 #One plot with all the data
